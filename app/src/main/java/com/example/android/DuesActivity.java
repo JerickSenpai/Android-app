@@ -1,29 +1,31 @@
 package com.example.android;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
+
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 
 public class DuesActivity extends AppCompatActivity {
 
-    ListView listView;
-    ArrayList<String> duesList;
-    ArrayAdapter<String> adapter;
-    String URL = "http://192.168.x.x/myapi/dues.php"; // Replace with your IP/path
-    private boolean useTestData = false;
+    private ListView duesListView;
+    private DuesAdapter adapter;
+    private ArrayList<Due> duesList;
+
+    // TODO: Replace this with your actual ngrok URL or your server IP/domain
+    private static final String BASE_URL = "http://YOUR_NGROK_URL_HERE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,96 +34,76 @@ public class DuesActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbarDues);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        listView = findViewById(R.id.duesListView);
-        duesList = new ArrayList<>();
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, duesList);
-        listView.setAdapter(adapter);
-
-        // Check if we should use test data
-        if (getIntent().getBooleanExtra("use_test_data", false)) {
-            useTestData = true;
-            getSupportActionBar().setTitle("Dues (Test Data)");
-            loadPlaceholderDues();
-        } else {
-            fetchDuesFromServer();
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Outstanding Dues");
         }
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Add menu item to toggle test data
-        menu.add(0, 1, 0, useTestData ? "Use Real Data" : "Use Test Data");
-        return true;
+        duesListView = findViewById(R.id.duesListView);
+        duesList = new ArrayList<>();
+        adapter = new DuesAdapter(this, duesList);
+        duesListView.setAdapter(adapter);
+
+        loadDuesData();
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        } else if (item.getItemId() == 1) {
-            // Toggle between test and real data
-            useTestData = !useTestData;
-            invalidateOptionsMenu(); // Refresh menu
-
-            if (useTestData) {
-                getSupportActionBar().setTitle("Dues (Test Data)");
-                loadPlaceholderDues();
-            } else {
-                getSupportActionBar().setTitle("Dues");
-                fetchDuesFromServer();
-            }
+            finish(); // Go back when back button in toolbar is pressed
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void fetchDuesFromServer() {
-        RequestQueue queue = Volley.newRequestQueue(this);
+    private void loadDuesData() {
+        SharedPreferences sharedPref = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String studentId = sharedPref.getString("student_id", "");
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, URL, null,
-                response -> {
-                    try {
-                        if (response.getBoolean("success")) {
-                            JSONArray duesArray = response.getJSONArray("dues");
-                            duesList.clear();
-                            for (int i = 0; i < duesArray.length(); i++) {
-                                duesList.add(duesArray.getString(i));
-                            }
-                            adapter.notifyDataSetChanged();
+        if (studentId.isEmpty()) {
+            Toast.makeText(this, "Student ID not found.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-                            if (duesList.isEmpty()) {
-                                Toast.makeText(this, "No dues found", Toast.LENGTH_SHORT).show();
-                            }
-                        } else {
-                            Toast.makeText(this, "Failed to load dues. Loading test data instead.", Toast.LENGTH_SHORT).show();
-                            loadPlaceholderDues();
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(this, "Parsing error. Loading test data instead.", Toast.LENGTH_SHORT).show();
-                        loadPlaceholderDues();
-                    }
-                },
+        String url = BASE_URL + "/api/get_dues.php?student_id=" + studentId;
+
+        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+                this::parseDuesData,
                 error -> {
-                    error.printStackTrace();
-                    Toast.makeText(this, "Network error. Loading test data instead.", Toast.LENGTH_SHORT).show();
-                    loadPlaceholderDues();
-                });
+                    String message = "Failed to load dues.";
+                    if (error.networkResponse != null) {
+                        message += " Error code: " + error.networkResponse.statusCode;
+                    }
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                }
+        );
 
-        queue.add(request);
+        Volley.newRequestQueue(this).add(request);
     }
 
-    /**
-     * Load placeholder dues data for testing
-     */
-    private void loadPlaceholderDues() {
-        duesList.clear();
-        duesList.addAll(PlaceholderDataGenerator.generateSampleDues(5));
-        adapter.notifyDataSetChanged();
+    private void parseDuesData(JSONArray response) {
+        try {
+            duesList.clear();
+            for (int i = 0; i < response.length(); i++) {
+                JSONObject obj = response.getJSONObject(i);
 
-        Toast.makeText(this, "Loaded " + duesList.size() + " sample dues", Toast.LENGTH_SHORT).show();
+                String bookTitle = obj.optString("book_title", "N/A");
+                String borrowDate = obj.optString("borrow_date", "N/A");
+                String dueDate = obj.optString("due_date", "N/A");
+                double fineAmount = obj.optDouble("fine_amount", 0.0);
+                int daysOverdue = obj.optInt("days_overdue", 0);
+
+                duesList.add(new Due(bookTitle, borrowDate, dueDate, fineAmount, daysOverdue));
+            }
+
+            adapter.notifyDataSetChanged();
+
+            if (duesList.isEmpty()) {
+                Toast.makeText(this, "No outstanding dues found.", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            Toast.makeText(this, "Error parsing dues: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 }

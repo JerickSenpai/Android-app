@@ -1,28 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <!-- Toolbar with Back button and Title -->
+    <!-- Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbarDues"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="?attr/actionBarSize"
         android:background="#0071BC"
-        app:title="Dues"
         app:titleTextColor="@android:color/white"
-        app:navigationIcon="?attr/actionModeCloseDrawable"
-        app:titleCentered="true"
+        app:title="Outstanding Dues"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
+    <!-- Dues List -->
     <ListView
         android:id="@+id/duesListView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:padding="16dp"
         android:divider="#CCCCCC"
         android:dividerHeight="1dp" />
-
 </LinearLayout>

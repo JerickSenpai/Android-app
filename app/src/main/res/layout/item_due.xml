@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="12dp"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/white"
+    android:elevation="2dp">
+
+    <TextView
+        android:id="@+id/bookTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Book Title"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#000000" />
+
+    <TextView
+        android:id="@+id/borrowDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Borrowed: yyyy-mm-dd" />
+
+    <TextView
+        android:id="@+id/dueDate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Due: yyyy-mm-dd" />
+
+    <TextView
+        android:id="@+id/fineAmount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Fine: ₱0.00"
+        android:textColor="#D32F2F" />
+
+    <TextView
+        android:id="@+id/daysOverdue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Overdue: 0 day(s)"
+        android:textColor="#D32F2F" />
+</LinearLayout>

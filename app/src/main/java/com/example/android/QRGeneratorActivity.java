@@ -1,14 +1,12 @@
 package com.example.android;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -23,8 +21,6 @@ public class QRGeneratorActivity extends AppCompatActivity {
 
     private static final String TAG = "QRGeneratorActivity";
 
-    private EditText etStudentId;
-    private Button btnGenerateQR;
     private ImageView ivQRCode;
     private ProgressBar progressBar;
     private View placeholderLayout;
@@ -40,12 +36,18 @@ public class QRGeneratorActivity extends AppCompatActivity {
         executor = Executors.newSingleThreadExecutor();
 
         initializeViews();
-        setupListeners();
+
+        // Automatically fetch student ID from stored session
+        int studentId = getLoggedInStudentId();
+        if (studentId > 0) {
+            generateQRCode(studentId);
+        } else {
+            showError("Student ID not found. Please log in again.");
+        }
     }
 
     private void initializeViews() {
         try {
-            // Toolbar setup
             Toolbar toolbar = findViewById(R.id.toolbarQRGenerator);
             if (toolbar != null) {
                 setSupportActionBar(toolbar);
@@ -55,38 +57,16 @@ public class QRGeneratorActivity extends AppCompatActivity {
                 }
             }
 
-            // Initialize views with null checks
-            etStudentId = findViewById(R.id.etStudentId);
-            btnGenerateQR = findViewById(R.id.btnGenerateQR);
             ivQRCode = findViewById(R.id.ivQRCode);
             progressBar = findViewById(R.id.progressBar);
             placeholderLayout = findViewById(R.id.placeholderLayout);
 
-            // Verify all required views are found
-            if (etStudentId == null || btnGenerateQR == null || ivQRCode == null || progressBar == null) {
-                Log.e(TAG, "One or more required views not found in layout");
-                Toast.makeText(this, "Layout error: Missing required views", Toast.LENGTH_LONG).show();
+            if (ivQRCode == null || progressBar == null) {
+                Log.e(TAG, "Required views not found in layout");
+                Toast.makeText(this, "Layout error: Missing views", Toast.LENGTH_LONG).show();
                 finish();
-                return;
             }
 
-            // Check if student ID was passed from intent
-            Intent intent = getIntent();
-            if (intent != null && intent.hasExtra("student_id")) {
-                String studentIdStr = intent.getStringExtra("student_id");
-                if (!TextUtils.isEmpty(studentIdStr)) {
-                    etStudentId.setText(studentIdStr);
-                    try {
-                        int studentId = Integer.parseInt(studentIdStr);
-                        if (studentId > 0) {
-                            generateQRCode(studentId);
-                        }
-                    } catch (NumberFormatException e) {
-                        Log.w(TAG, "Invalid student ID format from intent: " + studentIdStr);
-                        Toast.makeText(this, "Invalid student ID format", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
         } catch (Exception e) {
             Log.e(TAG, "Error initializing views", e);
             Toast.makeText(this, "Error setting up the screen", Toast.LENGTH_LONG).show();
@@ -94,26 +74,9 @@ public class QRGeneratorActivity extends AppCompatActivity {
         }
     }
 
-    private void setupListeners() {
-        if (btnGenerateQR != null) {
-            btnGenerateQR.setOnClickListener(v -> {
-                String studentIdStr = etStudentId.getText().toString().trim();
-                if (!TextUtils.isEmpty(studentIdStr)) {
-                    try {
-                        int studentId = Integer.parseInt(studentIdStr);
-                        if (studentId <= 0) {
-                            Toast.makeText(this, "Student ID must be a positive number", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        generateQRCode(studentId);
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(this, "Please enter a valid numeric ID", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(this, "Student ID cannot be empty", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+    private int getLoggedInStudentId() {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        return prefs.getInt("student_id", -1); // Replace with your real session key
     }
 
     private void generateQRCode(int studentId) {
@@ -122,16 +85,11 @@ public class QRGeneratorActivity extends AppCompatActivity {
             return;
         }
 
-        // Show loading state
         showLoading(true);
 
-        // Use background thread for QR generation
         executor.execute(() -> {
             try {
-                // Use your custom QR generator instead of JourneyApps
                 Bitmap qrBitmap = QRCodeGenerator.generateStudentQRCode(studentId, 400);
-
-                // Update UI on main thread
                 runOnUiThread(() -> {
                     if (qrBitmap != null) {
                         displayQRCode(qrBitmap);
@@ -141,7 +99,6 @@ public class QRGeneratorActivity extends AppCompatActivity {
                     }
                     showLoading(false);
                 });
-
             } catch (Exception e) {
                 Log.e(TAG, "Error generating QR code for student ID: " + studentId, e);
                 runOnUiThread(() -> {
@@ -156,9 +113,6 @@ public class QRGeneratorActivity extends AppCompatActivity {
         if (progressBar != null) {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
         }
-        if (btnGenerateQR != null) {
-            btnGenerateQR.setEnabled(!show);
-        }
     }
 
     private void displayQRCode(Bitmap bitmap) {
@@ -166,7 +120,6 @@ public class QRGeneratorActivity extends AppCompatActivity {
             ivQRCode.setImageBitmap(bitmap);
             ivQRCode.setVisibility(View.VISIBLE);
 
-            // Hide placeholder if it exists
             if (placeholderLayout != null) {
                 placeholderLayout.setVisibility(View.GONE);
             }
@@ -194,7 +147,6 @@ public class QRGeneratorActivity extends AppCompatActivity {
             executor.shutdown();
         }
 
-        // Clean up bitmap to prevent memory leaks
         if (currentQRBitmap != null && !currentQRBitmap.isRecycled()) {
             currentQRBitmap.recycle();
             currentQRBitmap = null;
