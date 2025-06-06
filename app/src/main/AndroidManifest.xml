@@ -18,7 +18,9 @@
         android:roundIcon="@mipmap/untitled"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
-        android:theme="@style/Theme.MyApp"> <!-- USE YOUR MATERIAL THEME -->
+        android:theme="@style/Theme.MyApp">
+
+
 
 
         <activity
