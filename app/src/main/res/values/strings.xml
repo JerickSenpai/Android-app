@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Android</string>
+    <string name="login">Login</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="loginbutton">Login</string>
+    <string name="don_t_have_an_account_sign_up">Don\'t have an account? Sign Up</string>
+    <string name="back">Back</string>
+    <string name="back_button">Back Button</string>
+    <string name="attendance">Attendance</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="history">History</string>
+    <string name="due">Due</string>
+</resources>
