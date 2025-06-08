@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class AttendanceApiService {
     private static final String TAG = "AttendanceApiService";
-    private static final String BASE_URL = "https://09ae-120-29-110-79.ngrok-free.app/library_system/api/student/get_attendance.php";
+    private static final String BASE_URL = "https://a459-120-29-110-79.ngrok-free.app/library_system/api/student/get_attendance.php";
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -31,13 +31,9 @@ public class AttendanceApiService {
         void onError(String error);
     }
 
-    public static void fetchAttendanceRecords(AttendanceCallback callback) {
-        fetchAttendanceRecords(null, callback);
-    }
-
     public static void fetchAttendanceRecords(Integer studentId, AttendanceCallback callback) {
         executor.execute(() -> {
-            String urlString = BASE_URL ;
+            String urlString = BASE_URL;
             if (studentId != null) {
                 urlString += "?student_id=" + studentId;
             }
@@ -79,7 +75,7 @@ public class AttendanceApiService {
     private static void recordAttendance(int studentId, String type, AttendanceActionCallback callback) {
         executor.execute(() -> {
             try {
-                URL url = new URL(BASE_URL );
+                URL url = new URL(BASE_URL);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json");
@@ -116,14 +112,11 @@ public class AttendanceApiService {
         handler.post(() -> {
             try {
                 JSONObject jsonResponse = new JSONObject(result);
-
-                // Handle PHP API error format
                 if (jsonResponse.has("success") && !jsonResponse.getBoolean("success")) {
                     callback.onError(jsonResponse.optString("error", "Unknown error"));
                     return;
                 }
 
-                // Handle PHP API success format
                 String status = jsonResponse.optString("status", "");
                 if (status.equals("success")) {
                     JSONArray dataArray = jsonResponse.getJSONArray("attendance_logs");
