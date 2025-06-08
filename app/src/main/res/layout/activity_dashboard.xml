@@ -43,13 +43,16 @@
             android:layout_height="140dp"
             android:layout_margin="12dp"
             android:layout_gravity="center"
-            android:background="@drawable/modern_button_background"
+            android:background="@drawable/blue_button_background"
             android:drawableTop="@android:drawable/stat_sys_warning"
             android:drawablePadding="8dp"
             android:gravity="center"
             android:paddingTop="24dp"
             android:text="Due"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
 
         <Button
             android:id="@+id/btnHistory"
@@ -57,13 +60,16 @@
             android:layout_height="140dp"
             android:layout_margin="12dp"
             android:layout_gravity="center"
-            android:background="@drawable/modern_button_background"
+            android:background="@drawable/blue_button_background"
             android:drawableTop="@android:drawable/ic_menu_recent_history"
             android:drawablePadding="8dp"
             android:gravity="center"
             android:paddingTop="24dp"
             android:text="History"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
 
         <Button
             android:id="@+id/btnScanQR"
@@ -71,13 +77,16 @@
             android:layout_height="140dp"
             android:layout_margin="12dp"
             android:layout_gravity="center"
-            android:background="@drawable/modern_button_background"
+            android:background="@drawable/blue_button_background"
             android:drawableTop="@android:drawable/stat_sys_headset"
             android:drawablePadding="8dp"
             android:gravity="center"
             android:paddingTop="24dp"
             android:text="Borrow"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
 
         <Button
             android:id="@+id/btnAttendance"
@@ -85,13 +94,16 @@
             android:layout_height="140dp"
             android:layout_margin="12dp"
             android:layout_gravity="center"
-            android:background="@drawable/modern_button_background"
+            android:background="@drawable/blue_button_background"
             android:drawableTop="@android:drawable/ic_menu_my_calendar"
             android:drawablePadding="8dp"
             android:gravity="center"
             android:paddingTop="24dp"
             android:text="Attendance"
-            android:textColor="@android:color/white" />
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:elevation="4dp" />
     </GridLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

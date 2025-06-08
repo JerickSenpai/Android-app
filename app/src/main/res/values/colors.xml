@@ -1,21 +1,22 @@
 <resources>
     <!-- Primary -->
-    <color name="purple_500">#6200EE</color>
-    <color name="purple_700">#3700B3</color>
-    <color name="teal_200">#03DAC5</color>
+    <color name="primary_color">#2196F3</color>
+    <color name="primary_light">#E3F2FD</color>
+    <color name="primary_dark">#1976D2</color>
 
     <!-- Basic colors -->
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
 
     <!-- Missing colors -->
-    <color name="text_input_stroke_color">#FF6200EE</color>
+    <color name="text_input_stroke_color">#FF2196F3</color>
     <color name="text_input_hint_color">#80000000</color>
 
     <!-- Primary Colors -->
-    <color name="primary_color">#2196F3</color>
-    <color name="primary_light">#E3F2FD</color>
-    <color name="primary_dark">#1976D2</color>
+
+    <color name="purple_500">#1976D2</color>
+    <color name="purple_700">#2196F3</color>
+    <color name="teal_200">#03DAC5</color>
 
     <!-- Accent Colors -->
     <color name="accent_color">#FF9800</color>
@@ -55,5 +56,4 @@
     <!-- Other -->
     <color name="transparent">#00000000</color>
     <color name="black_overlay">#66000000</color>
-
 </resources>

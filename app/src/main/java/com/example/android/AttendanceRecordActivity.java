@@ -16,8 +16,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.Random;
 
 public class AttendanceRecordActivity extends AppCompatActivity {
 
@@ -33,6 +37,10 @@ public class AttendanceRecordActivity extends AppCompatActivity {
     // QR Footer components
     private Button btnGenerateQR;
     private Button btnScanQR;
+
+    // Placeholder data constants
+    private static final Random random = new Random();
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +64,10 @@ public class AttendanceRecordActivity extends AppCompatActivity {
         // Toolbar setup
         Toolbar toolbar = findViewById(R.id.toolbarAttendance);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("Attendance Records");
+        }
 
         // Initialize main views
         recyclerViewAttendance = findViewById(R.id.recyclerViewAttendance);
@@ -80,7 +91,7 @@ public class AttendanceRecordActivity extends AppCompatActivity {
     private void setupRecyclerView() {
         recyclerViewAttendance.setLayoutManager(new LinearLayoutManager(this));
         attendanceList = new ArrayList<>();
-        attendanceAdapter = new AttendanceAdapter(attendanceList);
+        attendanceAdapter = new AttendanceAdapter(attendanceList, this);
         recyclerViewAttendance.setAdapter(attendanceAdapter);
     }
 
@@ -111,82 +122,37 @@ public class AttendanceRecordActivity extends AppCompatActivity {
     private void loadAttendanceData() {
         showLoading(true);
 
-        // Get student ID from intent or SharedPreferences if available
-        // For now, we'll fetch all records
-        AttendanceApiService.fetchAttendanceRecords(new AttendanceApiService.AttendanceCallback() {
-            @Override
-            public void onSuccess(List<AttendanceModel> attendanceRecords) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showLoading(false);
+        SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
+        String studentIdStr = prefManager.getStudentId();
 
-                        if (attendanceRecords != null && !attendanceRecords.isEmpty()) {
-                            attendanceList.clear();
-                            attendanceList.addAll(attendanceRecords);
-                            attendanceAdapter.notifyDataSetChanged();
-                            showNoDataMessage(false);
-                        } else {
-                            showNoDataMessage(true);
-                        }
-                    }
-                });
+        Integer studentId = null;
+        if (studentIdStr != null && !studentIdStr.isEmpty()) {
+            try {
+                studentId = Integer.parseInt(studentIdStr);
+            } catch (NumberFormatException e) {
+                Log.e(TAG, "Invalid student ID format: " + studentIdStr);
             }
-
-            @Override
-            public void onError(String error) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showLoading(false);
-                        showNoDataMessage(true);
-                        Toast.makeText(AttendanceRecordActivity.this,
-                                "Error loading attendance: " + error,
-                                Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "Error loading attendance: " + error);
-                    }
-                });
-            }
-        });
-    }
-
-    // Method to load attendance for specific student
-    public void loadAttendanceForStudent(int studentId) {
-        showLoading(true);
+        }
 
         AttendanceApiService.fetchAttendanceRecords(studentId, new AttendanceApiService.AttendanceCallback() {
             @Override
-            public void onSuccess(List<AttendanceModel> attendanceRecords) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showLoading(false);
-
-                        if (attendanceRecords != null && !attendanceRecords.isEmpty()) {
-                            attendanceList.clear();
-                            attendanceList.addAll(attendanceRecords);
-                            attendanceAdapter.notifyDataSetChanged();
-                            showNoDataMessage(false);
-                        } else {
-                            showNoDataMessage(true);
-                        }
-                    }
-                });
+            public void onSuccess(List<AttendanceModel> attendanceListResult) {
+                showLoading(false);
+                attendanceList.clear();
+                if (attendanceListResult != null && !attendanceListResult.isEmpty()) {
+                    attendanceList.addAll(attendanceListResult);
+                    attendanceAdapter.notifyDataSetChanged();
+                    showNoDataMessage(false);
+                } else {
+                    showNoDataMessage(true);
+                }
             }
 
             @Override
             public void onError(String error) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        showLoading(false);
-                        showNoDataMessage(true);
-                        Toast.makeText(AttendanceRecordActivity.this,
-                                "Error loading attendance: " + error,
-                                Toast.LENGTH_LONG).show();
-                        Log.e(TAG, "Error loading attendance: " + error);
-                    }
-                });
+                showLoading(false);
+                showNoDataMessage(true);
+                Toast.makeText(AttendanceRecordActivity.this, "Error: " + error, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -212,17 +178,9 @@ public class AttendanceRecordActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            startActivity(new Intent(AttendanceRecordActivity.this, DashboardActivity.class));
-            finish();
+            finish(); // Back arrow click: close this activity
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Refresh data when activity resumes
-        loadAttendanceData();
     }
 }

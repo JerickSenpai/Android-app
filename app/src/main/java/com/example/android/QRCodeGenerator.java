@@ -31,7 +31,7 @@ public class QRCodeGenerator {
         }
 
         if (size < MIN_QR_SIZE || size > MAX_QR_SIZE) {
-            Log.w(TAG, "QR size out of range, using default");
+            Log.w(TAG, "Invalid QR size: " + size + ". Using default size: " + DEFAULT_QR_SIZE);
             size = DEFAULT_QR_SIZE;
         }
 

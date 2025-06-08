@@ -1,6 +1,5 @@
 package com.example.android;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.ListView;
@@ -10,13 +9,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.android.volley.Request;
-import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class DuesActivity extends AppCompatActivity {
 
@@ -24,8 +24,7 @@ public class DuesActivity extends AppCompatActivity {
     private DuesAdapter adapter;
     private ArrayList<Due> duesList;
 
-    // TODO: Replace this with your actual ngrok URL or your server IP/domain
-    private static final String BASE_URL = "http://YOUR_NGROK_URL_HERE";
+    private static final String BASE_URL = "https://09ae-120-29-110-79.ngrok-free.app/library_system";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,58 +49,58 @@ public class DuesActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            finish(); // Go back when back button in toolbar is pressed
+            finish();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     private void loadDuesData() {
-        SharedPreferences sharedPref = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        String studentId = sharedPref.getString("student_id", "");
+        SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
+        String studentId = prefManager.getStudentId();
 
-        if (studentId.isEmpty()) {
-            Toast.makeText(this, "Student ID not found.", Toast.LENGTH_SHORT).show();
+        if (studentId == null || studentId.isEmpty()) {
+            Toast.makeText(this, "Student ID not found. Please login again.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String url = BASE_URL + "/api/get_dues.php?student_id=" + studentId;
+        String url = BASE_URL + "/api/student/get_dues.php?student_id=" + studentId;
 
-        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
-                this::parseDuesData,
-                error -> {
-                    String message = "Failed to load dues.";
-                    if (error.networkResponse != null) {
-                        message += " Error code: " + error.networkResponse.statusCode;
-                    }
-                    Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+            response -> parseDuesData(response),
+            error -> {
+                String message = "Failed to load dues.";
+                if (error.networkResponse != null) {
+                    message += " Error code: " + error.networkResponse.statusCode;
                 }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            }
         );
 
         Volley.newRequestQueue(this).add(request);
     }
 
-    private void parseDuesData(JSONArray response) {
+    private void parseDuesData(JSONObject response) {
         try {
             duesList.clear();
-            for (int i = 0; i < response.length(); i++) {
-                JSONObject obj = response.getJSONObject(i);
-
-                String bookTitle = obj.optString("book_title", "N/A");
-                String borrowDate = obj.optString("borrow_date", "N/A");
-                String dueDate = obj.optString("due_date", "N/A");
-                double fineAmount = obj.optDouble("fine_amount", 0.0);
-                int daysOverdue = obj.optInt("days_overdue", 0);
-
-                duesList.add(new Due(bookTitle, borrowDate, dueDate, fineAmount, daysOverdue));
-            }
-
-            adapter.notifyDataSetChanged();
-
-            if (duesList.isEmpty()) {
+            if (response.has("status") && response.getString("status").equals("success")) {
+                JSONArray duesArray = response.getJSONArray("dues");
+                for (int i = 0; i < duesArray.length(); i++) {
+                    JSONObject obj = duesArray.getJSONObject(i);
+                    String bookTitle = obj.optString("book_title", "N/A");
+                    String borrowDate = obj.optString("borrow_date", "N/A");
+                    String dueDate = obj.optString("due_date", "N/A");
+                    double fineAmount = obj.optDouble("fine_amount", 0.0);
+                    int daysOverdue = obj.optInt("days_overdue", 0);
+                    duesList.add(new Due(bookTitle, borrowDate, dueDate, fineAmount, daysOverdue));
+                }
+                adapter.notifyDataSetChanged();
+                if (duesList.isEmpty()) {
+                    Toast.makeText(this, "No outstanding dues found.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
                 Toast.makeText(this, "No outstanding dues found.", Toast.LENGTH_SHORT).show();
             }
-
         } catch (Exception e) {
             Toast.makeText(this, "Error parsing dues: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }

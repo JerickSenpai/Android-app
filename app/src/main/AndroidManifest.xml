@@ -24,7 +24,7 @@
 
 
         <activity
-            android:name=".DashboardActivity"
+            android:name=".LoginActivity"
             android:exported="true"
             android:theme="@style/Theme.MyApp.NoActionBar"> <!-- Custom NoActionBar if needed -->
             <intent-filter>
@@ -49,13 +49,21 @@
             android:theme="@style/Theme.MyApp.NoActionBar" />
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".DashboardActivity"
             android:theme="@style/Theme.MyApp.NoActionBar" />
-
         <activity
             android:name=".AttendanceRecordActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MyApp.NoActionBar" />
+            android:theme="@style/Theme.MyApp.NoActionBar"
+            android:exported="false">
+        </activity>
+        <activity
+            android:name=".QRGeneratorActivity"
+            android:theme="@style/Theme.MyApp.NoActionBar"
+            android:exported="false" />
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".AttendanceRecordActivity" />
+
     </application>
 
 </manifest>

@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class AttendanceApiService {
     private static final String TAG = "AttendanceApiService";
-    private static final String BASE_URL = "http://192.168.100.145/library_system/api/attendance/attendance_api.php";
+    private static final String BASE_URL = "https://09ae-120-29-110-79.ngrok-free.app/library_system/api/student/get_attendance.php";
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -112,24 +112,32 @@ public class AttendanceApiService {
     }
 
     private static void parseAttendanceResponse(String result, AttendanceCallback callback) {
+        Log.d(TAG, "API Raw Response: " + result);
         handler.post(() -> {
             try {
                 JSONObject jsonResponse = new JSONObject(result);
-                boolean success = jsonResponse.getBoolean("success");
 
-                if (success) {
-                    JSONArray dataArray = jsonResponse.getJSONArray("data");
+                // Handle PHP API error format
+                if (jsonResponse.has("success") && !jsonResponse.getBoolean("success")) {
+                    callback.onError(jsonResponse.optString("error", "Unknown error"));
+                    return;
+                }
+
+                // Handle PHP API success format
+                String status = jsonResponse.optString("status", "");
+                if (status.equals("success")) {
+                    JSONArray dataArray = jsonResponse.getJSONArray("attendance_logs");
                     List<AttendanceModel> attendanceList = new ArrayList<>();
 
                     for (int i = 0; i < dataArray.length(); i++) {
                         JSONObject item = dataArray.getJSONObject(i);
                         AttendanceModel attendance = new AttendanceModel(
-                                item.getString("id"),
-                                item.getString("student_id"),
-                                item.getString("full_name"),
-                                item.getString("program"),
-                                item.getString("type"),
-                                item.getString("date"),
+                                item.optString("id", ""),
+                                item.optString("student_id", ""),
+                                item.optString("full_name", ""),
+                                item.optString("program", ""),
+                                item.optString("type", ""),
+                                item.optString("date", ""),
                                 item.optString("time_in", null),
                                 item.optString("time_out", null)
                         );
@@ -138,7 +146,7 @@ public class AttendanceApiService {
 
                     callback.onSuccess(attendanceList);
                 } else {
-                    callback.onError(jsonResponse.optString("error", "Unknown error"));
+                    callback.onError(jsonResponse.optString("message", "Unknown error"));
                 }
             } catch (JSONException e) {
                 Log.e(TAG, "JSON parsing error", e);
@@ -166,10 +174,16 @@ public class AttendanceApiService {
     }
 
     private static void postError(AttendanceCallback callback, String errorMessage) {
-        handler.post(() -> callback.onError(errorMessage));
+        handler.post(() -> {
+            Log.e(TAG, "Error: " + errorMessage);
+            callback.onError(errorMessage);
+        });
     }
 
     private static void postError(AttendanceActionCallback callback, String errorMessage) {
-        handler.post(() -> callback.onError(errorMessage));
+        handler.post(() -> {
+            Log.e(TAG, "Error: " + errorMessage);
+            callback.onError(errorMessage);
+        });
     }
 }
