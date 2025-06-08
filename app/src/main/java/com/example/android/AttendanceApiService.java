@@ -31,10 +31,10 @@ public class AttendanceApiService {
         void onError(String error);
     }
 
-    public static void fetchAttendanceRecords(Integer studentId, AttendanceCallback callback) {
+    public static void fetchAttendanceRecords(String studentId, AttendanceCallback callback) {
         executor.execute(() -> {
             String urlString = BASE_URL;
-            if (studentId != null) {
+            if (studentId != null && !studentId.isEmpty()) {
                 urlString += "?student_id=" + studentId;
             }
 
@@ -64,15 +64,15 @@ public class AttendanceApiService {
         });
     }
 
-    public static void recordTimeIn(int studentId, AttendanceActionCallback callback) {
+    public static void recordTimeIn(String studentId, AttendanceActionCallback callback) {
         recordAttendance(studentId, "entry", callback);
     }
 
-    public static void recordTimeOut(int studentId, AttendanceActionCallback callback) {
+    public static void recordTimeOut(String studentId, AttendanceActionCallback callback) {
         recordAttendance(studentId, "exit", callback);
     }
 
-    private static void recordAttendance(int studentId, String type, AttendanceActionCallback callback) {
+    private static void recordAttendance(String studentId, String type, AttendanceActionCallback callback) {
         executor.execute(() -> {
             try {
                 URL url = new URL(BASE_URL);
@@ -112,35 +112,36 @@ public class AttendanceApiService {
         handler.post(() -> {
             try {
                 JSONObject jsonResponse = new JSONObject(result);
-                if (jsonResponse.has("success") && !jsonResponse.getBoolean("success")) {
+
+                if (!jsonResponse.optBoolean("success", false)) {
                     callback.onError(jsonResponse.optString("error", "Unknown error"));
                     return;
                 }
 
-                String status = jsonResponse.optString("status", "");
-                if (status.equals("success")) {
-                    JSONArray dataArray = jsonResponse.getJSONArray("attendance_logs");
-                    List<AttendanceModel> attendanceList = new ArrayList<>();
-
-                    for (int i = 0; i < dataArray.length(); i++) {
-                        JSONObject item = dataArray.getJSONObject(i);
-                        AttendanceModel attendance = new AttendanceModel(
-                                item.optString("id", ""),
-                                item.optString("student_id", ""),
-                                item.optString("full_name", ""),
-                                item.optString("program", ""),
-                                item.optString("type", ""),
-                                item.optString("date", ""),
-                                item.optString("time_in", null),
-                                item.optString("time_out", null)
-                        );
-                        attendanceList.add(attendance);
-                    }
-
-                    callback.onSuccess(attendanceList);
-                } else {
-                    callback.onError(jsonResponse.optString("message", "Unknown error"));
+                JSONArray dataArray = jsonResponse.optJSONArray("attendance_logs");
+                if (dataArray == null) {
+                    callback.onError("No attendance logs found.");
+                    return;
                 }
+
+                List<AttendanceModel> attendanceList = new ArrayList<>();
+                for (int i = 0; i < dataArray.length(); i++) {
+                    JSONObject item = dataArray.getJSONObject(i);
+                    AttendanceModel attendance = new AttendanceModel(
+                            item.optString("id"),
+                            item.optString("student_id"),
+                            item.optString("full_name"),
+                            item.optString("program"),
+                            item.optString("type"),
+                            item.optString("date"),
+                            item.optString("time_in", null),
+                            item.optString("time_out", null)
+                    );
+                    attendanceList.add(attendance);
+                }
+
+                callback.onSuccess(attendanceList);
+
             } catch (JSONException e) {
                 Log.e(TAG, "JSON parsing error", e);
                 callback.onError("Data parsing error");
