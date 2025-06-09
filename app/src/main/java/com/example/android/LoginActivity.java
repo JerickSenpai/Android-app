@@ -23,7 +23,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView forgotPassword;
     private static final String TAG = "LoginActivity";
 
-    private static final String LOGIN_URL = " https://09ae-120-29-110-79.ngrok-free.app/library_system/api/student/login.php";
+    private static final String LOGIN_URL ="https://8c36-120-29-110-79.ngrok-free.app/library_system/api/student/login.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
