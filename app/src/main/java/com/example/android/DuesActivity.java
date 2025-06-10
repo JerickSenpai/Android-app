@@ -24,7 +24,7 @@ public class DuesActivity extends AppCompatActivity {
     private DuesAdapter adapter;
     private ArrayList<Due> duesList;
 
-    private static final String BASE_URL = "https://09ae-120-29-110-79.ngrok-free.app/library_system";
+    private static final String BASE_URL = "https://8c9f-120-29-110-79.ngrok-free.app/library_system";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

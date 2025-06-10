@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -125,38 +126,46 @@ public class AttendanceRecordActivity extends AppCompatActivity {
         SharedPrefManager prefManager = SharedPrefManager.getInstance(this);
         String studentIdStr = prefManager.getStudentId();
 
-        Integer studentId = null;
+        Log.d(TAG, "Loading attendance data for student ID: " + studentIdStr);
+
         if (studentIdStr != null && !studentIdStr.isEmpty()) {
-            try {
-                studentId = Integer.parseInt(studentIdStr);
-            } catch (NumberFormatException e) {
-                Log.e(TAG, "Invalid student ID format: " + studentIdStr);
-            }
-        }
-
-        AttendanceApiService.fetchAttendanceRecords(studentId, new AttendanceApiService.AttendanceCallback() {
-            @Override
-            public void onSuccess(List<AttendanceModel> attendanceListResult) {
-                showLoading(false);
-                attendanceList.clear();
-                if (attendanceListResult != null && !attendanceListResult.isEmpty()) {
-                    attendanceList.addAll(attendanceListResult);
-                    attendanceAdapter.notifyDataSetChanged();
-                    showNoDataMessage(false);
-                } else {
-                    showNoDataMessage(true);
+            AttendanceApiService.fetchAttendanceRecords(studentIdStr, new AttendanceApiService.AttendanceCallback() {
+                @Override
+                public void onSuccess(List<AttendanceModel> attendanceListResult) {
+                    showLoading(false);
+                    Log.d(TAG, "Received " + (attendanceListResult != null ? attendanceListResult.size() : 0) + " attendance records");
+                    
+                    attendanceList.clear();
+                    if (attendanceListResult != null && !attendanceListResult.isEmpty()) {
+                        attendanceList.addAll(attendanceListResult);
+                        attendanceAdapter.notifyDataSetChanged();
+                        showNoDataMessage(false);
+                        Log.d(TAG, "Successfully updated attendance list");
+                    } else {
+                        Log.d(TAG, "No attendance records found");
+                        showNoDataMessage(true);
+                    }
                 }
-            }
 
-            @Override
-            public void onError(String error) {
-                showLoading(false);
-                showNoDataMessage(true);
-                Toast.makeText(AttendanceRecordActivity.this, "Error: " + error, Toast.LENGTH_LONG).show();
-            }
-        });
+                @Override
+                public void onError(String errorMessage) {
+                    showLoading(false);
+                    Log.e(TAG, "Failed to fetch attendance: " + errorMessage);
+                    showNoDataMessage(true);
+                    Toast.makeText(AttendanceRecordActivity.this, 
+                        "Error loading attendance: " + errorMessage, 
+                        Toast.LENGTH_LONG).show();
+                }
+            });
+        } else {
+            showLoading(false);
+            Log.e(TAG, "Student ID is missing or invalid");
+            Toast.makeText(this, 
+                "Invalid student ID. Please log in again.", 
+                Toast.LENGTH_LONG).show();
+            showNoDataMessage(true);
+        }
     }
-
     private void showLoading(boolean show) {
         if (progressBar != null) {
             progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
@@ -169,6 +178,12 @@ public class AttendanceRecordActivity extends AppCompatActivity {
     private void showNoDataMessage(boolean show) {
         if (tvNoData != null) {
             tvNoData.setVisibility(show ? View.VISIBLE : View.GONE);
+            
+            // Update the message text
+            TextView messageText = tvNoData.findViewById(R.id.tvNoDataMessage);
+            if (messageText != null) {
+                messageText.setText("No attendance records found for your account.\nPlease check in at the library to start recording your attendance.");
+            }
         }
         if (recyclerViewAttendance != null) {
             recyclerViewAttendance.setVisibility(show ? View.GONE : View.VISIBLE);

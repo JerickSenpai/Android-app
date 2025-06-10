@@ -60,9 +60,11 @@
                 app:tint="@color/text_secondary" />
 
             <TextView
+                android:id="@+id/tvNoDataMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:gravity="center"
                 android:text="No attendance records found"
                 android:textColor="@color/text_secondary"
                 android:textSize="16sp" />

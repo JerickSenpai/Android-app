@@ -40,7 +40,7 @@ public class BorrowQR extends AppCompatActivity {
     private String scannedBookId = "";
     private String autoExpirationDate = "";
 
-    private final String API_URL = "https://8c36-120-29-110-79.ngrok-free.app/library_system/api/borrow/borrow_book.php";
+    private final String API_URL = "https://619e-120-29-110-79.ngrok-free.app//library_system/api/borrow/borrow_book.php";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

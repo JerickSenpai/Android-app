@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class AttendanceApiService {
     private static final String TAG = "AttendanceApiService";
-    private static final String BASE_URL = "https://8c36-120-29-110-79.ngrok-free.app/library_system/api/student/get_attendance.php";
+    private static final String BASE_URL = "https://619e-120-29-110-79.ngrok-free.app/library_system/api/student/get_attendance.php";
     private static final ExecutorService executor = Executors.newSingleThreadExecutor();
     private static final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -28,14 +28,14 @@ public class AttendanceApiService {
 
     public interface AttendanceActionCallback {
         void onSuccess(String message);
-        void onError(String error);
+        void onError(String errorMessage);
     }
 
-    public static void fetchAttendanceRecords(String studentId, AttendanceCallback callback) {
+    public static void fetchAttendanceRecords(String student_id, AttendanceCallback callback) {
         executor.execute(() -> {
             String urlString = BASE_URL;
-            if (studentId != null && !studentId.isEmpty()) {
-                urlString += "?student_id=" + studentId;
+            if (student_id != null && !student_id.isEmpty()) {
+                urlString += "?student_id=" + student_id;
             }
 
             try {
@@ -44,6 +44,10 @@ public class AttendanceApiService {
                 connection.setRequestMethod("GET");
                 connection.setConnectTimeout(10000);
                 connection.setReadTimeout(10000);
+                
+                // Add necessary headers for ngrok
+                connection.setRequestProperty("ngrok-skip-browser-warning", "true");
+                connection.setRequestProperty("Accept", "application/json");
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -112,15 +116,28 @@ public class AttendanceApiService {
     private static void parseAttendanceResponse(String result, AttendanceCallback callback) {
         handler.post(() -> {
             try {
+                Log.d(TAG, "Raw response: " + result);
                 JSONObject jsonResponse = new JSONObject(result);
-                String status = jsonResponse.optString("status", "error");
+                
+                boolean isSuccess = jsonResponse.optBoolean("success", false) || 
+                                  jsonResponse.optString("status", "").equals("success");
+                
+                if (isSuccess) {
+                    JSONArray logsArray;
+                    if (jsonResponse.has("attendance_logs")) {
+                        logsArray = jsonResponse.getJSONArray("attendance_logs");
+                    } else if (jsonResponse.has("data")) {
+                        logsArray = jsonResponse.getJSONArray("data");
+                    } else {
+                        callback.onError("No attendance data found in response");
+                        return;
+                    }
 
-                if (status.equals("success")) {
-                    JSONArray logsArray = jsonResponse.getJSONArray("attendance_logs");
                     List<AttendanceModel> logs = new ArrayList<>();
 
                     for (int i = 0; i < logsArray.length(); i++) {
                         JSONObject item = logsArray.getJSONObject(i);
+                        Log.d(TAG, "Processing item: " + item.toString());
 
                         String id = item.optString("id", "");
                         String studentId = item.optString("student_id", "");
@@ -140,11 +157,15 @@ public class AttendanceApiService {
 
                     callback.onSuccess(logs);
                 } else {
-                    callback.onError(jsonResponse.optString("message", "Unknown error"));
+                    String errorMessage = jsonResponse.optString("message", 
+                                     jsonResponse.optString("error", "Unknown error"));
+                    Log.e(TAG, "API Error: " + errorMessage);
+                    callback.onError(errorMessage);
                 }
             } catch (JSONException e) {
-                Log.e("ParseError", "JSON parsing error", e);
-                callback.onError("Response parsing error");
+                Log.e(TAG, "JSON parsing error: " + e.getMessage());
+                Log.e(TAG, "Response that caused error: " + result);
+                callback.onError("Response parsing error: " + e.getMessage());
             }
         });
     }

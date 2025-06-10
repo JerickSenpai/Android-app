@@ -23,7 +23,7 @@ public class HistoryActivity extends AppCompatActivity {
     private HistoryAdapter adapter;
     private ArrayList<Transaction> transactionList;
 
-    private static final String BASE_URL = "https://09ae-120-29-110-79.ngrok-free.app/library_system";
+    private static final String BASE_URL = "https://619e-120-29-110-79.ngrok-free.app/library_system";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,27 +66,67 @@ public class HistoryActivity extends AppCompatActivity {
         String url = BASE_URL + "/api/student/get_borrow_history.php?student_id=" + studentId;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> parseHistoryData(response),
-                error -> {
-                    String errorMessage = "Failed to load history.";
-                    if (error.networkResponse != null) {
-                        errorMessage += " Error code: " + error.networkResponse.statusCode;
+                response -> {
+                    try {
+                        parseHistoryData(response);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Error parsing history: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
-                    Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+                },
+                error -> {
+                    String errorMessage = "Failed to load history. ";
+                    if (error.networkResponse != null) {
+                        errorMessage += "Error code: " + error.networkResponse.statusCode + ". ";
+                    }
+                    if (error instanceof com.android.volley.TimeoutError) {
+                        errorMessage += "Request timed out. Please try again.";
+                    } else if (error instanceof com.android.volley.NoConnectionError) {
+                        errorMessage += "No internet connection.";
+                    } else if (error instanceof com.android.volley.AuthFailureError) {
+                        errorMessage += "Authentication failed.";
+                    } else if (error instanceof com.android.volley.ServerError) {
+                        errorMessage += "Server error. Please try again later.";
+                    } else if (error instanceof com.android.volley.NetworkError) {
+                        errorMessage += "Network error. Please check your connection.";
+                    } else if (error instanceof com.android.volley.ParseError) {
+                        errorMessage += "Response parsing error.";
+                    } else {
+                        errorMessage += error.getMessage();
+                    }
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
                 }
         );
 
-        Volley.newRequestQueue(this).add(request);
+        request.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(
+                15000,
+                com.android.volley.DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                com.android.volley.DefaultRetryPolicy.DEFAULT_BACKOFF_MULT
+        ));
+
+        try {
+            com.android.volley.RequestQueue queue = com.android.volley.toolbox.Volley.newRequestQueue(this);
+            queue.add(request);
+        } catch (Exception e) {
+            Toast.makeText(this, "Unexpected error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void parseHistoryData(JSONObject response) {
         try {
             transactionList.clear();
+            if (response == null) {
+                Toast.makeText(this, "No response from server.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             if (response.has("status") && response.getString("status").equals("success")) {
+                if (!response.has("borrow_history")) {
+                    Toast.makeText(this, "No transaction history found.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 JSONArray history = response.getJSONArray("borrow_history");
                 for (int i = 0; i < history.length(); i++) {
                     JSONObject obj = history.getJSONObject(i);
-                    String title = obj.optString("book_title", "Unknown Book");
+                    String title = obj.optString("title", "Unknown Book");
                     String borrowDate = obj.optString("borrow_date", "N/A");
                     String returnDate = obj.optString("return_date", "Not returned");
                     String status = obj.optString("status", "Unknown");
@@ -100,13 +140,14 @@ public class HistoryActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
 
                 if (transactionList.isEmpty()) {
-                    Toast.makeText(this, "No transaction history found", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "No transaction history found.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Toast.makeText(this, "No transaction history found", Toast.LENGTH_SHORT).show();
+                String message = response.has("message") ? response.optString("message") : "No transaction history found.";
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Error parsing history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error parsing history: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 }
