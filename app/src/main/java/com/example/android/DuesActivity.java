@@ -69,7 +69,9 @@ public class DuesActivity extends AppCompatActivity {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
             response -> parseDuesData(response),
             error -> {
-                String message = "Failed to load dues.";
+                // Use placeholder data when API call fails
+                usePlaceholderData();
+                String message = "Using placeholder data due to connection error.";
                 if (error.networkResponse != null) {
                     message += " Error code: " + error.networkResponse.statusCode;
                 }
@@ -78,6 +80,13 @@ public class DuesActivity extends AppCompatActivity {
         );
 
         Volley.newRequestQueue(this).add(request);
+    }
+
+    private void usePlaceholderData() {
+        duesList.clear();
+        List<Due> placeholderDues = PlaceholderDataHelper.generatePlaceholderDues(5); // Generate 5 placeholder dues
+        duesList.addAll(placeholderDues);
+        adapter.notifyDataSetChanged();
     }
 
     private void parseDuesData(JSONObject response) {
@@ -102,7 +111,9 @@ public class DuesActivity extends AppCompatActivity {
                 Toast.makeText(this, "No outstanding dues found.", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
-            Toast.makeText(this, "Error parsing dues: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // Use placeholder data when parsing fails
+            usePlaceholderData();
+            Toast.makeText(this, "Error parsing dues. Using placeholder data.", Toast.LENGTH_LONG).show();
         }
     }
 }
